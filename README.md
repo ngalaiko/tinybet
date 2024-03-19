@@ -16,7 +16,7 @@ pnpm run dev
 
 ```bash
 docker build . --tag tinybet
-docker run --rm --interactive --tty tinybet 
+docker run --rm --interactive --tty  --publish 3000:3000 tinybet
 open http://127.0.0.1:3000
 ```
 
