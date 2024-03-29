@@ -3,6 +3,7 @@ import { fail } from '@sveltejs/kit';
 import { parseCurrency } from '$lib/server/prices';
 import { randomUUID } from 'crypto';
 import { compareAsc } from 'date-fns';
+import { nextBid } from '$lib/ladder';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals, params }) {
@@ -63,6 +64,9 @@ export const actions = {
 		if (isNaN(amount)) {
 			return fail(400, AMOUNT_INVALID);
 		}
+        if (amount < lot.minimumNextBidPrice.amount) {
+			return fail(400, AMOUNT_TOO_LOW);
+        }
 
 		const currencyRaw = data.get('currency')?.toString();
 		if (!currencyRaw) {
@@ -72,16 +76,7 @@ export const actions = {
 		if (!currency) {
 			return fail(400, CURRENCY_UNSUPPORTED);
 		}
-
 		const convertedValue = locals.pricesController.convert({ amount, currency }, 'SEK');
-
-		if (lot.highestBid && convertedValue.amount <= lot.highestBid.value.amount) {
-			return fail(400, AMOUNT_TOO_LOW);
-		}
-
-		if (!lot.highestBid && convertedValue.amount <= lot.startingPrice.amount) {
-			return fail(400, AMOUNT_TOO_LOW);
-		}
 
 		const bid = {
 			id: randomUUID(),

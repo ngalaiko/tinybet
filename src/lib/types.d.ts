@@ -2,6 +2,7 @@ import type { Currency, Price, Bid, Lot as DbLot, User, Session } from '$lib/ser
 
 export type Lot = DbLot & {
 	highestBid: Bid | null;
+	minimumNextBidPrice: Price;
 };
 
 export { Currency, Price, User, Bid, Session };

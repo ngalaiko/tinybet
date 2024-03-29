@@ -42,6 +42,47 @@ export class LotsController {
 		this.pricesController = pricesController;
 	}
 
+    /**
+	 * @param {import('$lib/server/types').Lot} lot
+	 * @param {import('$lib/server/types').Bid | null} highestBid
+	 * @param {import('$lib/types').Currency} displayCurrency
+	 * @return {Promise<import('$lib/types').Price>}
+     * */
+    async calculateMinimumBid(lot, highestBid, displayCurrency) {
+        let basePrice = lot.startingPrice
+        if (highestBid) {
+            basePrice = highestBid.value
+        }
+
+        const basePriceInSEK = this.pricesController.convert(basePrice, 'SEK')
+
+        const buckets = [
+           [999, 50],
+           [4999, 200],
+           [9999, 500],
+           [19999, 1000],
+           [49999, 2000],
+           [199999, 5000],
+           [499999, 10000],
+           [999999, 20000],
+           [Infinity, 50000],
+        ]
+
+
+        let minimumBid = basePriceInSEK
+        for (const [limit, step] of buckets) {
+            if (basePriceInSEK.amount <= limit) {
+                minimumBid = {
+                    amount: basePriceInSEK.amount + step,
+                    currency: basePriceInSEK.currency
+                }
+                break
+            }
+        }
+
+        return this.pricesController.convert(minimumBid, displayCurrency)
+    }
+
 	/**
 	 * @param {import('$lib/server/types').Lot} lot
 	 * @param {import('$lib/types').Currency} displayCurrency
@@ -49,10 +90,11 @@ export class LotsController {
 	 * */
 	async viewOne(lot, displayCurrency) {
 		const bids = await this.bidsController.listByLotId(lot.id, displayCurrency);
-		const highestBid = bids.length > 0 ? bids[0] : null;
+		const highestBid = bids.sort((a, b) => a.value.amount - b.value.amount).pop() ?? null;
 		return {
 			...lot,
 			startingPrice: this.pricesController.convert(lot.startingPrice, displayCurrency),
+            minimumNextBidPrice: await this.calculateMinimumBid(lot, highestBid, displayCurrency),
 			highestBid
 		};
 	}

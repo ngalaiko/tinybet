@@ -46,6 +46,7 @@
 							aria-describedby="amount-invalid-helper"
 							name="amount"
 							type="number"
+                            value={data.lot.minimumNextBidPrice.amount}
 							required
 							placeholder="100.0"
 						/>
